@@ -1,8 +1,8 @@
 # PlandFly
 
-`PlandFly` 是一个基于 LeviLamina 的服务器插件，用于给 `Pland` 领地系统增加“领地内付费飞行”功能。
+`PlandFly` 是一个基于 LeviLamina 的服务器插件，用于给 `Pland` 领地系统增加“领地内飞行”功能，可按配置切换为付费或免费模式。
 
-玩家可以先开启飞行待命状态。进入符合条件的领地后，插件会自动授予飞行能力并按时间扣除经济；离开领地后，飞行与收费都会自动暂停；重新进入领地后会自动恢复。
+玩家可以先开启飞行待命状态。进入符合条件的领地后，插件会自动授予飞行能力，并按配置决定是否按时间扣除经济；离开领地后，飞行与收费都会自动暂停；重新进入领地后会自动恢复。
 
 ## 功能介绍
 
@@ -10,6 +10,7 @@
 - 进入可飞行领地后自动启用飞行。
 - 离开领地后自动暂停飞行，并停止收费。
 - 重新进入领地后自动恢复飞行，并继续或重新开始计费。
+- 支持关闭经济模式，改为免费飞行。
 - 支持按固定时间周期扣费。
 - 支持 GUI 页面操作，不需要手打完整命令。
 - 支持限制只有领地主人/成员才能使用。
@@ -93,15 +94,16 @@
 
 ```json
 {
-    "version": 2,
+    "version": 3,
     "logLevel": "Info",
-    "language": "en_US",
+    "language": "zh_CN",
     "landFlight": {
         "enabled": true,
         "command": "plandfly",
         "alias": "pfly",
+        "useEconomy": true,
         "chargeAmount": 10,
-        "chargeIntervalSeconds": 60,
+        "chargeIntervalSeconds": 10,
         "chargeOnStart": true,
         "requireLandMember": true,
         "notifyEachCharge": true
@@ -119,16 +121,18 @@
   主命令名称
 - `landFlight.alias`
   命令别名
+- `landFlight.useEconomy`
+  是否启用经济扣费；为 `false` 时改为免费飞行，下面几个收费相关配置将不再生效
 - `landFlight.chargeAmount`
-  每个收费周期扣除的经济数量
+  每个收费周期扣除的经济数量，仅在 `landFlight.useEconomy = true` 时生效
 - `landFlight.chargeIntervalSeconds`
-  收费周期，单位为秒
+  收费周期，单位为秒，仅在 `landFlight.useEconomy = true` 时生效
 - `landFlight.chargeOnStart`
-  玩家进入可飞行领地时，是否立即扣除首期费用
+  玩家进入可飞行领地时，是否立即扣除首期费用，仅在 `landFlight.useEconomy = true` 时生效
 - `landFlight.requireLandMember`
   是否要求玩家必须是领地主人或成员
 - `landFlight.notifyEachCharge`
-  每次成功扣费后是否发送提示
+  每次成功扣费后是否发送提示，仅在 `landFlight.useEconomy = true` 时生效
 
 ## 安装
 

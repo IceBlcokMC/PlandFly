@@ -9,6 +9,7 @@ struct LandFlightConfig {
     bool        enabled               = true;
     std::string command               = "plandfly";
     std::string alias                 = "pfly";
+    bool        useEconomy            = true;
     long long   chargeAmount          = 10;
     int         chargeIntervalSeconds = 10;
     bool        chargeOnStart         = true;
@@ -17,7 +18,7 @@ struct LandFlightConfig {
 };
 
 struct Config {
-    int              version                  = 2;
+    int              version                  = 3;
     ll::io::LogLevel logLevel                 = ll::io::LogLevel::Info;
     std::string      language                 = "zh_CN";
     LandFlightConfig landFlight{};

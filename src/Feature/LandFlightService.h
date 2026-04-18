@@ -40,6 +40,7 @@ private:
     [[nodiscard]] bool        hasSession(Player const& player) const;
     [[nodiscard]] FlightSession* tryGetSession(Player const& player);
     [[nodiscard]] FlightSession const* tryGetSession(Player const& player) const;
+    [[nodiscard]] bool        isEconomyEnabled() const;
     [[nodiscard]] int         getChargeIntervalSeconds() const;
     [[nodiscard]] long long   getChargeAmount() const;
 

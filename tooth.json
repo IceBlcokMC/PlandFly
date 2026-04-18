@@ -5,7 +5,7 @@
   "version": "0.0.0",
   "info": {
     "name": "PlandFly",
-    "description": "Pland 领地内付费飞行插件。玩家可先开启待命状态，进入领地后自动恢复飞行并按时间扣费，离开领地后自动暂停飞行与收费。",
+    "description": "Pland 领地内飞行插件，支持按配置切换付费或免费模式。玩家可先开启待命状态，进入领地后自动恢复飞行。",
     "tags": [
       "platform:levilamina",
       "type:mod",

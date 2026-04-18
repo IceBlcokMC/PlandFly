@@ -83,6 +83,10 @@ std::shared_ptr<land::Land> getEligibleLand(Player& player) {
 }
 
 ChargeResult tryCharge(Player& player, std::string& error) {
+    if (!config.landFlight.useEconomy) {
+        return ChargeResult::Success;
+    }
+
     const auto amount = std::max(0LL, config.landFlight.chargeAmount);
     if (amount <= 0) {
         return ChargeResult::Success;
@@ -294,6 +298,14 @@ void LandFlightService::processSecond() {
         }
 
         if (!session.activeInLand) {
+            if (!isEconomyEnabled()) {
+                player.setAbility(AbilitiesIndex::MayFly, true);
+                session.pluginGrantedMayFly = true;
+                session.activeInLand        = true;
+                sendMessage(player, "flight.entered_land.free", land->getName());
+                continue;
+            }
+
             if (session.secondsUntilCharge <= 0) {
                 std::string error;
                 auto        result = tryCharge(player, error);
@@ -326,6 +338,10 @@ void LandFlightService::processSecond() {
             session.pluginGrantedMayFly = true;
             session.activeInLand        = true;
             sendMessage(player, "flight.entered_land", land->getName(), session.secondsUntilCharge);
+            continue;
+        }
+
+        if (!isEconomyEnabled()) {
             continue;
         }
 
@@ -388,6 +404,22 @@ std::string LandFlightService::buildMainFormContent(Player& player) const {
     auto const land     = getEligibleLand(player);
     auto const landName = land ? land->getName() : tr("gui.land.none");
 
+    if (!isEconomyEnabled()) {
+        if (auto* session = tryGetSession(player); session != nullptr) {
+            if (session->activeInLand) {
+                return tr("gui.content.enabled.free", landName);
+            }
+
+            return tr("gui.content.waiting.free", landName);
+        }
+
+        if (land) {
+            return tr("gui.content.ready.free", landName);
+        }
+
+        return tr("gui.content.disabled.free");
+    }
+
     auto const balance = LLMoney_Get(player.getXuid());
 
     if (auto* session = tryGetSession(player); session != nullptr) {
@@ -433,13 +465,25 @@ bool LandFlightService::enableForPlayer(Player& player, std::string* errorMessag
     }
 
     auto& session = mSessions[player.getXuid()];
-    session.secondsUntilCharge = config.landFlight.chargeOnStart ? 0 : getChargeIntervalSeconds();
+    session.secondsUntilCharge = isEconomyEnabled() ? (config.landFlight.chargeOnStart ? 0 : getChargeIntervalSeconds()) : 0;
     session.pluginGrantedMayFly = false;
     session.activeInLand        = false;
 
     auto land = getEligibleLand(player);
     if (!land) {
-        sendMessage(player, "flight.enabled_waiting", getChargeAmount(), getChargeIntervalSeconds());
+        if (isEconomyEnabled()) {
+            sendMessage(player, "flight.enabled_waiting", getChargeAmount(), getChargeIntervalSeconds());
+        } else {
+            sendMessage(player, "flight.enabled_waiting.free");
+        }
+        return true;
+    }
+
+    if (!isEconomyEnabled()) {
+        player.setAbility(AbilitiesIndex::MayFly, true);
+        session.pluginGrantedMayFly = true;
+        session.activeInLand        = true;
+        sendMessage(player, "flight.started.free", land->getName());
         return true;
     }
 
@@ -468,6 +512,24 @@ bool LandFlightService::enableForPlayer(Player& player, std::string* errorMessag
 
 void LandFlightService::handleStatusCommand(Player& player) const {
     auto land = getEligibleLand(player);
+    if (!isEconomyEnabled()) {
+        if (auto* session = tryGetSession(player); session != nullptr) {
+            if (session->activeInLand) {
+                sendMessage(player, "flight.status.enabled.free", land ? land->getName() : tr("flight.status.no_land"));
+            } else {
+                sendMessage(player, "flight.status.waiting.free");
+            }
+            return;
+        }
+
+        if (land) {
+            sendMessage(player, "flight.status.ready.free", land->getName());
+        } else {
+            sendMessage(player, "flight.status.disabled.free");
+        }
+        return;
+    }
+
     if (auto* session = tryGetSession(player); session != nullptr) {
         if (session->activeInLand) {
             sendMessage(
@@ -518,6 +580,8 @@ LandFlightService::FlightSession const* LandFlightService::tryGetSession(Player 
     auto it = mSessions.find(player.getXuid());
     return it == mSessions.end() ? nullptr : &it->second;
 }
+
+bool LandFlightService::isEconomyEnabled() const { return config.landFlight.useEconomy; }
 
 int LandFlightService::getChargeIntervalSeconds() const { return std::max(1, config.landFlight.chargeIntervalSeconds); }
 
