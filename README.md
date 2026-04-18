@@ -1,74 +1,154 @@
-# LeviLamina Mod Template
+# PlandFly
 
-Reusable LeviLamina C++ template for mod authors.
+`PlandFly` 是一个基于 LeviLamina 的服务器插件，用于给 `Pland` 领地系统增加“领地内付费飞行”功能。
 
-What this template provides:
+玩家可以先开启飞行待命状态。进入符合条件的领地后，插件会自动授予飞行能力并按时间扣除经济；离开领地后，飞行与收费都会自动暂停；重新进入领地后会自动恢复。
 
-- Config bootstrap and default value fallback
-- I18n loader (`lang/*.json`)
-- Event registration skeleton
-- Standard `load/enable/disable` lifecycle
+## 功能介绍
 
-## Quick Start
+- 支持玩家在领地外先开启飞行待命状态。
+- 进入可飞行领地后自动启用飞行。
+- 离开领地后自动暂停飞行，并停止收费。
+- 重新进入领地后自动恢复飞行，并继续或重新开始计费。
+- 支持按固定时间周期扣费。
+- 支持 GUI 页面操作，不需要手打完整命令。
+- 支持限制只有领地主人/成员才能使用。
+- 尽量避免接管玩家原本已有的飞行权限。
 
-1. Create a repository from this template and clone it.
-2. Initialize placeholders with the helper script:
+## 依赖
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\init-template.ps1 `
-  -ModName "my-awesome-mod" `
-  -Tooth "github.com/your-org/my-awesome-mod"
+本插件运行前需要以下插件已正常加载：
+
+- `Pland`
+- `LegacyMoney`
+
+## 使用方式
+
+### 命令
+
+默认主命令：
+
+```text
+/plandfly
 ```
 
-3. Update LeviLamina version in `xmake.lua` if needed.
-4. Build:
+默认别名：
 
-```powershell
-xmake f -y -p windows -a x64 -m release --target_type=server
-xmake
+```text
+/pfly
 ```
 
-Build output is generated under `bin/`.
+支持的子命令：
 
-`init-template.ps1` options:
+- `/plandfly`
+  打开 GUI 主界面
+- `/plandfly gui`
+  打开 GUI 主界面
+- `/plandfly on`
+  开启飞行状态
+- `/plandfly off`
+  关闭飞行状态
+- `/plandfly status`
+  查看当前状态
 
-- `-Namespace`: custom C++ namespace (default from `-ModName`)
-- `-DisplayName`: mod display name (default from `-ModName`)
-- `-Description`: `tooth.json` description text
-- `-DryRun`: preview replacements without writing files
+### GUI
 
-## Project Structure
+输入 `/plandfly` 后会打开主界面，界面中会显示：
 
-- `src/mod/Entry.cpp`: lifecycle entrypoint
-- `src/Event/EventRegistrar.cpp`: event register/unregister example
-- `src/Config/Config.h`: config schema
-- `src/Config/ConfigManager.cpp`: config load/save
-- `src/I18n/I18n.cpp`: i18n load/lookup
-- `lang/zh_CN.json` / `lang/en_US.json`: translations
+- 当前是否处于待命/激活状态
+- 当前所在领地
+- 下次扣费时间
+- 收费标准
+- 当前经济余额
 
-## Default Config
+界面中提供以下按钮：
 
-On first run, `config/config.json` is auto-generated.
-When new top-level fields are added in code, missing keys are appended automatically while preserving existing comments and current key order.
+- 开启飞行状态
+- 关闭飞行状态
+- 发送文字状态
+- 刷新界面
 
-- `version`: config version
-- `logLevel`: logger level
-- `language`: active locale, e.g. `en_US`, `zh_CN`
-- `exampleJoinMessageEnable`: example join message switch (default `false`)
-- `exampleJoinLogEnable`: example join log switch (default `false`)
+## 飞行与收费逻辑
 
-## Extend This Template
+玩家开启飞行状态后，插件按以下规则运行：
 
-1. Add your listeners under `src/Event`.
-2. Keep registration centralized in `EventRegistrar`.
-3. Add config fields in `src/Config/Config.h`.
-4. Add translation keys in `lang/*.json`.
-5. Wire your modules in `Entry::enable()`.
+1. 如果玩家当前不在可飞行领地内：
+   插件只记录“待命状态”，不会立即给予飞行，也不会收费。
+2. 如果玩家进入可飞行领地：
+   插件自动给予飞行，并根据配置开始收费。
+3. 如果玩家离开领地：
+   插件自动关闭由本插件授予的飞行，并暂停收费。
+4. 如果玩家重新进入领地：
+   插件自动恢复飞行，并继续计费。
+5. 如果余额不足或扣费失败：
+   插件会自动关闭这次飞行状态。
+6. 如果玩家手动关闭：
+   插件会结束待命/飞行状态。
 
-## References
+## 默认配置
 
-- LeviLamina docs: https://lamina.levimc.org/developer_guides/tutorials/create_your_first_mod/
+插件首次启动时会自动生成 `config/config.json`。
 
-## License
+当前配置结构如下：
 
-CC0-1.0 © LeviMC (LiteLDev)
+```json
+{
+    "version": 2,
+    "logLevel": "Info",
+    "language": "en_US",
+    "landFlight": {
+        "enabled": true,
+        "command": "plandfly",
+        "alias": "pfly",
+        "chargeAmount": 10,
+        "chargeIntervalSeconds": 60,
+        "chargeOnStart": true,
+        "requireLandMember": true,
+        "notifyEachCharge": true
+    }
+}
+```
+
+### 配置项说明
+
+- `language`
+  插件语言，支持 `zh_CN`、`en_US`
+- `landFlight.enabled`
+  是否启用领地飞行功能
+- `landFlight.command`
+  主命令名称
+- `landFlight.alias`
+  命令别名
+- `landFlight.chargeAmount`
+  每个收费周期扣除的经济数量
+- `landFlight.chargeIntervalSeconds`
+  收费周期，单位为秒
+- `landFlight.chargeOnStart`
+  玩家进入可飞行领地时，是否立即扣除首期费用
+- `landFlight.requireLandMember`
+  是否要求玩家必须是领地主人或成员
+- `landFlight.notifyEachCharge`
+  每次成功扣费后是否发送提示
+
+## 安装
+
+1. 确保服务器已安装 `LeviLamina`
+2. 确保服务器已安装并正常加载：
+   `Pland`、`LegacyMoney`
+3. 将插件放入服务器插件目录
+4. 启动服务器，等待插件自动生成配置文件
+5. 根据需要修改 `config/config.json`
+6. 重启服务器或重新加载插件
+
+
+## 适用场景
+
+- 生存服希望允许玩家在自己领地里付费飞行
+- 希望把飞行能力限制在安全区域内
+- 希望把飞行做成一种持续消耗型服务
+
+## 说明
+
+- 本插件只处理“由插件自己授予的飞行能力”。
+- 玩家如果本来就拥有管理员飞行、创造飞行或其他插件授予的飞行，本插件不会强行接管。
+- 当前仓库中的发布元数据仍包含模板内容；如果你准备正式发布，建议再同步更新 `tooth.json` 等文件。

@@ -1,11 +1,16 @@
 #include "mod/Entry.h"
 
 #include "Config/ConfigManager.h"
+#include "Feature/LandFlightService.h"
 #include "I18n/I18n.h"
 #include "ll/api/mod/RegisterHelper.h"
+#include "LLMoney.h"
+#include "pland/PLand.h"
+
 #include <filesystem>
 
 namespace my_mod {
+
 ll::io::Logger& logger = Entry::getInstance().getSelf().getLogger();
 Config&         config = ConfigManager::getInstance().get();
 
@@ -45,12 +50,15 @@ bool Entry::load() {
 bool Entry::enable() {
     getSelf().getLogger().debug("Enabling...");
 
+    LandFlightService::getInstance().enable();
     logger.info(tr("plugin.enabled"));
     return true;
 }
 
 bool Entry::disable() {
     getSelf().getLogger().debug("Disabling...");
+
+    LandFlightService::getInstance().disable();
     logger.info(tr("plugin.unloaded"));
     return true;
 }
@@ -58,8 +66,8 @@ bool Entry::disable() {
 bool Entry::unload() {
     getSelf().getLogger().debug("Unloading...");
     return true;
-
-} 
+}
 
 LL_REGISTER_MOD(my_mod::Entry, my_mod::Entry::getInstance());
-}
+
+} // namespace my_mod
