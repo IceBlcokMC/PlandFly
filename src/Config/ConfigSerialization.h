@@ -1,62 +1,71 @@
 #pragma once
 
 #include "Config.h"
-#include "ll/api/io/LogLevel.h"
+
 #include <nlohmann/json.hpp>
 
-#include <boost/pfr.hpp>
-#include <string_view>
-#include <type_traits>
-#include <utility> // for std::index_sequence
+namespace my_mod {
 
+namespace detail {
 
-namespace nlohmann {
-
-// 通用序列化模板，适用于所有聚合类型 (C++17 或更高版本)
 template <typename T>
-    requires std::is_aggregate_v<T>
-struct adl_serializer<T> {
-    /**
-     * @brief 将聚合类型 T 序列化为 JSON 对象。
-     */
-    static void to_json(json& j, const T& value) {
-        j = json::object();
-        // 获取结构体成员的数量
-        constexpr auto field_count = boost::pfr::tuple_size_v<T>;
-
-        // 使用 C++17 的模板 lambda 和折叠表达式在编译时遍历所有成员
-        [&]<size_t... I>(std::index_sequence<I...>) {
-            // ( expression, ... ) 是折叠表达式的语法
-            // 它会为 I 的每一个值（0, 1, 2, ...）展开内部的表达式
-            ((j[boost::pfr::get_name<I, T>()] = boost::pfr::get<I>(value)), ...);
-        }(std::make_index_sequence<field_count>{});
+void getConfigValue(nlohmann::json const& json, char const* name, T& value, T const& defaultValue) {
+    auto const it = json.find(name);
+    if (it == json.end()) {
+        value = defaultValue;
+        return;
     }
 
-    /**
-     * @brief 从 JSON 对象反序列化为聚合类型 T。
-     */
-    static void from_json(const json& j, T& value) {
-        const T        default_value{};
-        constexpr auto field_count = boost::pfr::tuple_size_v<T>;
+    it->get_to(value);
+}
 
-        // 同样使用编译时展开技术
-        [&]<size_t... I>(std::index_sequence<I...>) {
-            (([&] {
-                 // 获取编译时成员名称
-                 constexpr std::string_view name = boost::pfr::get_name<I, T>();
+} // namespace detail
 
-                 if (j.contains(name)) {
-                     // 从 JSON 中获取值并赋给对应成员
-                     j.at(name).get_to(boost::pfr::get<I>(value));
-                 } else {
-                     // 从默认构造的对象中获取默认值
-                     boost::pfr::get<I>(value) = boost::pfr::get<I>(default_value);
-                 }
-             }()),
-             ...); // 立即调用内部 lambda
-        }(std::make_index_sequence<field_count>{});
-    }
-};
+inline void to_json(nlohmann::json& json, LandFlightConfig const& value) {
+    json = nlohmann::json::object();
+    json["enabled"]               = value.enabled;
+    json["command"]               = value.command;
+    json["alias"]                 = value.alias;
+    json["useEconomy"]            = value.useEconomy;
+    json["chargeAmount"]          = value.chargeAmount;
+    json["chargeIntervalSeconds"] = value.chargeIntervalSeconds;
+    json["chargeOnStart"]         = value.chargeOnStart;
+    json["requireLandMember"]     = value.requireLandMember;
+    json["notifyEachCharge"]      = value.notifyEachCharge;
+}
 
-} // namespace nlohmann
+inline void from_json(nlohmann::json const& json, LandFlightConfig& value) {
+    LandFlightConfig const defaults{};
+    detail::getConfigValue(json, "enabled", value.enabled, defaults.enabled);
+    detail::getConfigValue(json, "command", value.command, defaults.command);
+    detail::getConfigValue(json, "alias", value.alias, defaults.alias);
+    detail::getConfigValue(json, "useEconomy", value.useEconomy, defaults.useEconomy);
+    detail::getConfigValue(json, "chargeAmount", value.chargeAmount, defaults.chargeAmount);
+    detail::getConfigValue(
+        json,
+        "chargeIntervalSeconds",
+        value.chargeIntervalSeconds,
+        defaults.chargeIntervalSeconds
+    );
+    detail::getConfigValue(json, "chargeOnStart", value.chargeOnStart, defaults.chargeOnStart);
+    detail::getConfigValue(json, "requireLandMember", value.requireLandMember, defaults.requireLandMember);
+    detail::getConfigValue(json, "notifyEachCharge", value.notifyEachCharge, defaults.notifyEachCharge);
+}
 
+inline void to_json(nlohmann::json& json, Config const& value) {
+    json = nlohmann::json::object();
+    json["version"]    = value.version;
+    json["logLevel"]   = value.logLevel;
+    json["language"]   = value.language;
+    json["landFlight"] = value.landFlight;
+}
+
+inline void from_json(nlohmann::json const& json, Config& value) {
+    Config const defaults{};
+    detail::getConfigValue(json, "version", value.version, defaults.version);
+    detail::getConfigValue(json, "logLevel", value.logLevel, defaults.logLevel);
+    detail::getConfigValue(json, "language", value.language, defaults.language);
+    detail::getConfigValue(json, "landFlight", value.landFlight, defaults.landFlight);
+}
+
+} // namespace my_mod

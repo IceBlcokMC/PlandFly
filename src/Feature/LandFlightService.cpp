@@ -109,6 +109,7 @@ void revokePluginFlight(Player& player, bool& pluginGrantedMayFly) {
         return;
     }
 
+    player.setAbility(AbilitiesIndex::Flying, false);
     player.setAbility(AbilitiesIndex::MayFly, false);
     pluginGrantedMayFly = false;
 }

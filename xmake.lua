@@ -5,13 +5,13 @@ add_repositories("iceblcokmc https://github.com/IceBlcokMC/xmake-repo.git")
 
 
 if is_config("target_type", "server") then
-    add_requires("levilamina 26.10.5", {configs = {target_type = "server"}})
+    add_requires("levilamina 26.20.0", {configs = {target_type = "server"}})
 else
-    add_requires("levilamina 26.10.5", {configs = {target_type = "client"}})
+    add_requires("levilamina 26.20.0", {configs = {target_type = "client"}})
 end
 
 add_requires("levibuildscript")
-add_requires("pland 0.20.0")
+add_requires("pland 0.21.0")
 add_requires("legacymoney")
 
 if not has_config("vs_runtime") then
@@ -27,6 +27,7 @@ option_end()
 target("PlandFly") 
     add_rules("@levibuildscript/linkrule")
     add_rules("@levibuildscript/modpacker")
+    set_toolchains("clang-cl")
     add_cxflags( "/EHa", "/utf-8", "/W4", "/w44265", "/w44289", "/w44296", "/w45263", "/w44738", "/w45204")
     add_defines("NOMINMAX", "UNICODE")
     add_packages("levilamina","pland","legacymoney")
