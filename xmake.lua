@@ -5,13 +5,13 @@ add_repositories("iceblcokmc https://github.com/IceBlcokMC/xmake-repo.git")
 
 
 if is_config("target_type", "server") then
-    add_requires("levilamina 26.20.0", {configs = {target_type = "server"}})
+    add_requires("levilamina 26.60.5", {configs = {target_type = "server"}})
 else
-    add_requires("levilamina 26.20.0", {configs = {target_type = "client"}})
+    add_requires("levilamina 26.60.5", {configs = {target_type = "client"}})
 end
 
 add_requires("levibuildscript")
-add_requires("pland 0.21.0")
+add_requires("pland 0.26.0")
 add_requires("legacymoney")
 
 if not has_config("vs_runtime") then
